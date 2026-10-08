@@ -65,14 +65,11 @@ export async function bootstrapApp(
   );
 
   options.beforeListen?.(app);
-  // Azure App Service sends traffic to the container port named in WEBSITES_PORT
-  const websitesPort = config.optional('WEBSITES_PORT');
-  const listenPort = websitesPort
-    ? Number(websitesPort)
-    : options.listenAt
-      ? portOf(config.get(options.listenAt))
-      : 0;
-  await app.listen(listenPort);
+  // Only the public entry point listens on a fixed port: Azure App Service sends traffic to WEBSITES_PORT
+  const listenPort = options.listenAt
+    ? (config.optional('WEBSITES_PORT') ?? portOf(config.get(options.listenAt)))
+    : 0;
+  await app.listen(Number(listenPort));
   if (options.publishAs) {
     const { port } = app.getHttpServer().address() as AddressInfo;
     publishAddress(options.publishAs, `http://localhost:${port}`);

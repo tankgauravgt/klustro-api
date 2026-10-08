@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 export type ConfigKey =
   | 'APPS_GW__URL'
+  | 'WEBSITES_PORT'
   | 'WEB_URL'
   | 'DB_PATH'
   | 'USE_SQLITE_DATABASE'

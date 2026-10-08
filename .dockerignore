@@ -1,0 +1,12 @@
+node_modules
+.env
+.env.*
+!.env.example
+package.json.backup
+coverage
+dist
+*.sqlite
+.git
+.gitignore
+Dockerfile
+.dockerignore

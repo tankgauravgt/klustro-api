@@ -45,7 +45,7 @@ export async function bootstrapApp(
   const config = app.get(AppConfigService);
   applyTrustProxy(app, config);
   app.enableCors({
-    origin: config.get('WEB_URL'),
+    origin: [...new Set([config.get('WEB_URL'), 'http://localhost:3000'])],
     credentials: true,
   });
 

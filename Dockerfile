@@ -14,9 +14,11 @@ COPY . .
 
 # In-memory SQLite: the data is gone on every restart, which is what dev mode wants.
 # Secrets and per-environment URLs come from the App Service settings, never from the image.
+# App Service mounts /home from a shared volume, so SWC's native-binding cache goes under /tmp.
 ENV DB_PATH=":memory:" \
     USE_SQLITE_DATABASE="1" \
-    WEBSITES_PORT="8080"
+    WEBSITES_PORT="8080" \
+    SWC_NATIVE_BINDING_CACHE="/tmp/swc-native"
 EXPOSE 8080
 
 USER node

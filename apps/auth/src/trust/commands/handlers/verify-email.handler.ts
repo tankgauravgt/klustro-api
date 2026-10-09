@@ -55,10 +55,38 @@ export class VerifyEmailHandler implements ICommandHandler<
       if (!user) {
         throw new BadRequestException(INVALID_LINK);
       }
+      const emails = manager.getRepository(Email);
+
+      // A link for an added address confirms that address, and nothing else about the account
+      if (token.emailId) {
+        const address = await emails.findOne({
+          where: { id: token.emailId, userId: user.id },
+        });
+        if (!address) {
+          throw new BadRequestException(INVALID_LINK);
+        }
+        address.isVerified = true;
+        await emails.save(address);
+        if (address.isPrimary) {
+          user.isEmailVerified = true;
+          await users.save(user);
+        }
+
+        await this.audit.record(
+          {
+            action: 'auth.email.verified',
+            entityType: 'email',
+            entityId: address.id,
+            scope: `user:${user.id}`,
+          },
+          manager,
+        );
+        return;
+      }
+
       user.isEmailVerified = true;
       await users.save(user);
 
-      const emails = manager.getRepository(Email);
       const primary = await emails.findOne({
         where: { userId: user.id, isPrimary: true },
       });

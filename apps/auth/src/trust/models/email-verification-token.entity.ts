@@ -20,6 +20,10 @@ export class EmailVerificationToken extends GovernedEntity {
   @Column()
   userId!: string;
 
+  // The address the link confirms; null for the sign-up link, which confirms the account itself
+  @Column({ type: 'varchar', nullable: true })
+  emailId!: string | null;
+
   @Column({ unique: true })
   tokenHash!: string;
 

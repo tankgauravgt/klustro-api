@@ -2,6 +2,8 @@ import { Body } from '@nestjs/common';
 import { Controller } from '@nestjs/common';
 import { Delete } from '@nestjs/common';
 import { Get } from '@nestjs/common';
+import { HttpCode } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { Param } from '@nestjs/common';
 import { ParseUUIDPipe } from '@nestjs/common';
 import { Patch } from '@nestjs/common';
@@ -17,6 +19,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { AddEmailCommand } from './commands/add-email.command.js';
 import { RemoveEmailCommand } from './commands/remove-email.command.js';
 import { SetPrimaryEmailCommand } from './commands/set-primary-email.command.js';
+
+// import commands from the trust feature
+import { ResendEmailVerificationCommand } from '../trust/commands/resend-email-verification.command.js';
 
 // import queries
 import { GetEmailsQuery } from './queries/get-emails.query.js';
@@ -55,6 +60,22 @@ export class EmailsController {
   @ApiOperation({ summary: 'Add a new email address to the current account.' })
   addEmail(@CurrentUser() user: RequestUser, @Body() dto: AddEmailDto) {
     return this.commandBus.execute(new AddEmailCommand(user.id, dto.email));
+  }
+
+  @Post(':emailId/verification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Send a new verification email for an unverified address.',
+  })
+  resendVerification(
+    @CurrentUser() user: RequestUser,
+    @Param('emailId', ParseUUIDPipe) emailId: string,
+  ): Promise<void> {
+    return this.commandBus.execute(
+      new ResendEmailVerificationCommand(user.id, emailId),
+    );
   }
 
   @Patch(':emailId/primary')

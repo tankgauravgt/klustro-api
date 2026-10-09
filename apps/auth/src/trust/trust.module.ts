@@ -18,6 +18,7 @@ import { PasswordService } from './services/password.service.js';
 
 // import handlers
 import { ForgotPasswordHandler } from './commands/handlers/forgot-password.handler.js';
+import { ResendEmailVerificationHandler } from './commands/handlers/resend-email-verification.handler.js';
 import { ResetPasswordHandler } from './commands/handlers/reset-password.handler.js';
 import { SignUpHandler } from './commands/handlers/sign-up.handler.js';
 import { VerifyEmailHandler } from './commands/handlers/verify-email.handler.js';
@@ -33,6 +34,7 @@ const commandHandlers = [
   SignUpHandler,
   ForgotPasswordHandler,
   ResetPasswordHandler,
+  ResendEmailVerificationHandler,
   VerifyEmailHandler,
 ];
 
@@ -61,6 +63,6 @@ const commandHandlers = [
     PasswordResetEmailService,
     ...commandHandlers,
   ],
-  exports: [PasswordService, EmailClaimService],
+  exports: [PasswordService, EmailClaimService, EmailVerificationService],
 })
 export class TrustModule {}

@@ -28,7 +28,12 @@ describe('AddEmailHandler', () => {
     save: vi.fn(),
   };
   const audit = { record: vi.fn() };
-  const handler = new AddEmailHandler(repository as never, audit as never);
+  const verification = { sendForAddress: vi.fn() };
+  const handler = new AddEmailHandler(
+    repository as never,
+    audit as never,
+    verification as never,
+  );
 
   beforeEach(() => {
     repository.countBy.mockReset().mockResolvedValue(1);
@@ -38,6 +43,7 @@ describe('AddEmailHandler', () => {
       ...value,
     }));
     audit.record.mockReset();
+    verification.sendForAddress.mockReset().mockResolvedValue(undefined);
   });
 
   it('adds a free address as an unverified secondary one', async () => {
@@ -51,6 +57,54 @@ describe('AddEmailHandler', () => {
       providedBy: null,
     });
     expect(audit.record).not.toHaveBeenCalled();
+  });
+
+  it('mails a verification link for the address it just added', async () => {
+    await handler.execute(command);
+
+    expect(verification.sendForAddress).toHaveBeenCalledWith('user-1', {
+      id: 'new-id',
+      email: 'new@example.com',
+    });
+  });
+
+  it('keeps the address and answers normally when the mail cannot be sent', async () => {
+    verification.sendForAddress.mockRejectedValue(new Error('mailgun down'));
+
+    const added = await handler.execute(command);
+
+    expect(added).toMatchObject({ id: 'new-id', isVerified: false });
+  });
+
+  it('mails nothing for an address another account holds', async () => {
+    repository.findOne.mockResolvedValue({
+      id: 'held-id',
+      userId: 'someone-else',
+      email: 'new@example.com',
+    });
+
+    await handler.execute(command);
+
+    expect(verification.sendForAddress).not.toHaveBeenCalled();
+  });
+
+  it('mails nothing when the address is already on the asker\'s own account', async () => {
+    repository.findOne.mockResolvedValue({ id: 'mine', userId: 'user-1' });
+
+    await handler.execute(command).catch(() => undefined);
+
+    expect(verification.sendForAddress).not.toHaveBeenCalled();
+  });
+
+  it('mails nothing when it loses the race for the address', async () => {
+    repository.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'held-id', userId: 'someone-else' });
+    repository.save.mockRejectedValue(lost());
+
+    await handler.execute(command);
+
+    expect(verification.sendForAddress).not.toHaveBeenCalled();
   });
 
   it('answers an address another account holds exactly like a free one, adding nothing', async () => {

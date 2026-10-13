@@ -11,6 +11,9 @@ export interface Upstreams {
   projects: () => string | undefined;
 }
 
+// Swagger's UI and its JSON/YAML documents, behind a service's prefix: /auth/docs, /auth/docs/x, /auth/docs-json
+const DOCS_URL = /^\/(auth|projects)(\/docs(?:-json|-yaml)?(?=[/?]|$))/;
+
 export function mountProxies(app: INestApplication): void {
   mountRoutes(app, {
     auth: () => resolveAddress('auth'),
@@ -36,6 +39,9 @@ export function mountRoutes(app: INestApplication, upstreams: Upstreams): void {
       next();
       return;
     }
+
+    // A service serves its Swagger UI at /docs, so the gateway's /auth/docs maps onto it
+    req.url = (req.url ?? '').replace(DOCS_URL, '$2');
 
     const target = route.target();
     if (!target) {

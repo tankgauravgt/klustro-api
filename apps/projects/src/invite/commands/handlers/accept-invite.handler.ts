@@ -48,6 +48,13 @@ export class AcceptInviteHandler implements ICommandHandler<
         }
         projectId = invite.projectId;
 
+        const project = await manager
+          .getRepository(Project)
+          .findOneByOrFail({ id: invite.projectId });
+        if (project.archivedAt) {
+          throw new ConflictException('Project is archived');
+        }
+
         const alreadyMember = await members.exists({
           where: { projectId: invite.projectId, userId },
         });
@@ -63,17 +70,14 @@ export class AcceptInviteHandler implements ICommandHandler<
           members.create({
             projectId: invite.projectId,
             userId,
-            role: 'member',
+            role: invite.role,
           }),
         );
 
-        const project = await manager
-          .getRepository(Project)
-          .findOneByOrFail({ id: invite.projectId });
         const memberCount = await members.countBy({
           projectId: invite.projectId,
         });
-        return toProjectSummary(project, 'member', memberCount);
+        return toProjectSummary(project, invite.role, memberCount);
       });
     } catch (error) {
       // Recorded after the rollback, so the refusal itself is never lost

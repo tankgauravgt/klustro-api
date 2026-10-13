@@ -171,13 +171,23 @@ describe('Projects (e2e)', () => {
   });
 
   describe('mesh provider immutability', () => {
-    it('exposes no endpoint to change a project', async () => {
+    it('offers no way to change the mesh provider through the API', async () => {
       const { id } = await createProject('immutable-user');
-      const res = await request(server)
+      const onlyProvider = await request(server)
         .patch(`/projects/${id}`)
         .set(auth('immutable-user'))
         .send({ meshProvider: 'Cloudflare' });
-      expect(res.status).toBe(404);
+      const withName = await request(server)
+        .patch(`/projects/${id}`)
+        .set(auth('immutable-user'))
+        .send({ name: 'Renamed', meshProvider: 'Cloudflare' });
+
+      expect(onlyProvider.status).toBe(400);
+      expect(withName.status).toBe(200);
+      expect(withName.body).toMatchObject({
+        name: 'Renamed',
+        meshProvider: 'Tailscale',
+      });
     });
 
     it('ignores mesh provider changes at the persistence layer', async () => {
@@ -203,14 +213,20 @@ describe('Projects (e2e)', () => {
       const res = await request(server).get('/projects').set(auth('lister'));
 
       expect(res.status).toBe(200);
-      expect(res.body.map((p: { id: string }) => p.id)).toEqual([mine.id]);
-      expect(res.body[0]).toMatchObject({ role: 'owner', memberCount: 1 });
+      expect(res.body.items.map((p: { id: string }) => p.id)).toEqual([
+        mine.id,
+      ]);
+      expect(res.body.total).toBe(1);
+      expect(res.body.items[0]).toMatchObject({
+        role: 'owner',
+        memberCount: 1,
+      });
     });
 
     it('returns an empty list for a user with no projects', async () => {
       const res = await request(server).get('/projects').set(auth('nobody'));
       expect(res.status).toBe(200);
-      expect(res.body).toEqual([]);
+      expect(res.body).toMatchObject({ items: [], total: 0 });
     });
   });
 
@@ -290,7 +306,7 @@ describe('Projects (e2e)', () => {
       expect(res.body).toMatchObject({ id, role: 'member', memberCount: 2 });
 
       const listed = await request(server).get('/projects').set(auth('joiner'));
-      expect(listed.body.map((p: { id: string }) => p.id)).toContain(id);
+      expect(listed.body.items.map((p: { id: string }) => p.id)).toContain(id);
     });
 
     it('consumes the invite so it cannot be used twice', async () => {
@@ -371,8 +387,8 @@ describe('Projects (e2e)', () => {
       const ownerList = await request(server)
         .get('/projects')
         .set(auth('owner-g'));
-      expect(leaverList.body).toEqual([]);
-      expect(ownerList.body[0]).toMatchObject({ id, memberCount: 1 });
+      expect(leaverList.body.items).toEqual([]);
+      expect(ownerList.body.items[0]).toMatchObject({ id, memberCount: 1 });
     });
 
     it('deletes the project when the last member leaves', async () => {
@@ -405,7 +421,11 @@ describe('Projects (e2e)', () => {
         .set(auth('owner-h'));
 
       const list = await request(server).get('/projects').set(auth('heir'));
-      expect(list.body[0]).toMatchObject({ id, role: 'owner', memberCount: 1 });
+      expect(list.body.items[0]).toMatchObject({
+        id,
+        role: 'owner',
+        memberCount: 1,
+      });
     });
 
     it('returns 404 for a project the user has not joined', async () => {

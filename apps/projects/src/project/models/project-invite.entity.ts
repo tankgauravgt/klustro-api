@@ -11,6 +11,9 @@ import { GovernedEntity } from '@libs/governance';
 // import models
 import { Project } from './project.entity.js';
 
+// import interfaces
+import type { ProjectRole } from '../interfaces/project-role.js';
+
 @Audited({
   name: 'project_invite',
   redact: ['tokenHash'],
@@ -34,6 +37,10 @@ export class ProjectInvite extends GovernedEntity {
 
   @Column()
   createdByUserId!: string;
+
+  // The role the person who accepts the invite gets
+  @Column({ type: 'varchar', default: 'member' })
+  role!: ProjectRole;
 
   @Column({ type: 'datetime' })
   expiresAt!: Date;

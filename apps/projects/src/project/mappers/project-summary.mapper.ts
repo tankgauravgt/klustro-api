@@ -17,5 +17,6 @@ export function toProjectSummary(
     createdAt: project.createdAt,
     memberCount,
     role,
+    archivedAt: project.archivedAt ?? null,
   };
 }

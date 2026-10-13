@@ -22,6 +22,7 @@ import { SetPrimaryEmailHandler } from './commands/handlers/set-primary-email.ha
 import { GetConnectionsHandler } from './queries/handlers/get-connections.handler.js';
 import { GetProfileHandler } from './queries/handlers/get-profile.handler.js';
 import { GetEmailsHandler } from './queries/handlers/get-emails.handler.js';
+import { LookupUsersHandler } from './queries/handlers/lookup-users.handler.js';
 
 // import models
 import { Email } from './models/email.entity.js';
@@ -42,6 +43,7 @@ const queryHandlers = [
   GetConnectionsHandler,
   GetEmailsHandler,
   GetProfileHandler,
+  LookupUsersHandler,
 ];
 
 // Who the account is: profile and username, emails, linked providers, password setting

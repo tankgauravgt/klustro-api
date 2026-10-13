@@ -8,11 +8,17 @@ import { ProjectModule } from '../project/project.module.js';
 import { AuditController } from './audit.controller.js';
 
 // import handlers
+import { ListProjectActivityHandler } from './queries/handlers/list-project-activity.handler.js';
 import { ListProjectAuditLogsHandler } from './queries/handlers/list-project-audit-logs.handler.js';
+import { VerifyProjectAuditHandler } from './queries/handlers/verify-project-audit.handler.js';
 
 @Module({
   imports: [CqrsModule, ProjectModule],
   controllers: [AuditController],
-  providers: [ListProjectAuditLogsHandler],
+  providers: [
+    ListProjectActivityHandler,
+    ListProjectAuditLogsHandler,
+    VerifyProjectAuditHandler,
+  ],
 })
 export class AuditModule {}

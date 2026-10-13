@@ -1,7 +1,9 @@
 import { Body } from '@nestjs/common';
 import { Controller } from '@nestjs/common';
 import { Get } from '@nestjs/common';
+import { HttpCode } from '@nestjs/common';
 import { Patch } from '@nestjs/common';
+import { Post } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { QueryBus } from '@nestjs/cqrs';
@@ -19,12 +21,15 @@ import { ChangeUsernameCommand } from './commands/change-username.command.js';
 
 // import queries
 import { GetProfileQuery } from './queries/get-profile.query.js';
+import { LookupUsersQuery } from './queries/lookup-users.query.js';
 
 // import handlers
 import type { ProfileResult } from './queries/handlers/get-profile.handler.js';
+import type { UserCard } from './queries/handlers/lookup-users.handler.js';
 
 // import dtos
 import { ChangeUsernameDto } from './dto/change-username.dto.js';
+import { LookupUsersDto } from './dto/lookup-users.dto.js';
 
 // import guards, decorators and strategies
 
@@ -48,6 +53,18 @@ export class ProfileController {
   })
   getCurrentUser(@CurrentUser() user: RequestUser): Promise<ProfileResult> {
     return this.queryBus.execute(new GetProfileQuery(user.id));
+  }
+
+  @Post('users/lookup')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary:
+      'Get the username and display name of accounts by id. Used by the projects service to name members.',
+  })
+  lookupUsers(@Body() dto: LookupUsersDto): Promise<UserCard[]> {
+    return this.queryBus.execute(new LookupUsersQuery(dto.ids));
   }
 
   @Patch('username')

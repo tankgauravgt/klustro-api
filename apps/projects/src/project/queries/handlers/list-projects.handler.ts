@@ -10,29 +10,58 @@ import { ListProjectsQuery } from '../list-projects.query.js';
 import { ProjectMember } from '../../models/project-member.entity.js';
 
 // import interfaces
-import type { ProjectSummary } from '../../interfaces/project-summary.js';
+import type { ProjectPage } from '../../interfaces/project-page.js';
 
 // import others
 import { toProjectSummary } from '../../mappers/project-summary.mapper.js';
 
+// LIKE treats % and _ as wildcards; the search text means them literally
+const escapeLike = (text: string): string => text.replace(/[\\%_]/g, '\\$&');
+
 @QueryHandler(ListProjectsQuery)
 export class ListProjectsHandler implements IQueryHandler<
   ListProjectsQuery,
-  ProjectSummary[]
+  ProjectPage
 > {
   constructor(
     @InjectRepository(ProjectMember)
     private readonly membersRepository: Repository<ProjectMember>,
   ) {}
 
-  async execute(query: ListProjectsQuery): Promise<ProjectSummary[]> {
-    const memberships = await this.membersRepository.find({
-      where: { userId: query.userId },
-      relations: { project: true },
-      order: { createdAt: 'ASC', id: 'ASC' },
-    });
+  async execute(query: ListProjectsQuery): Promise<ProjectPage> {
+    const { userId, filter } = query;
+
+    const matching = this.membersRepository
+      .createQueryBuilder('member')
+      .innerJoinAndSelect('member.project', 'project')
+      .where('member.userId = :userId', { userId });
+    if (filter.q) {
+      matching.andWhere("LOWER(project.name) LIKE :q ESCAPE '\\'", {
+        q: `%${escapeLike(filter.q.toLowerCase())}%`,
+      });
+    }
+    if (filter.role) {
+      matching.andWhere('member.role = :role', { role: filter.role });
+    }
+    if (filter.archived === 'exclude') {
+      matching.andWhere('project.archivedAt IS NULL');
+    } else if (filter.archived === 'only') {
+      matching.andWhere('project.archivedAt IS NOT NULL');
+    }
+
+    const direction = filter.order === 'desc' ? 'DESC' : 'ASC';
+    const total = await matching.getCount();
+    const memberships = await matching
+      .orderBy(
+        filter.sort === 'name' ? 'LOWER(project.name)' : 'project.createdAt',
+        direction,
+      )
+      .addOrderBy('project.id', direction)
+      .offset(filter.offset)
+      .limit(filter.limit)
+      .getMany();
     if (memberships.length === 0) {
-      return [];
+      return { items: [], total, limit: filter.limit, offset: filter.offset };
     }
 
     const counts = await this.membersRepository
@@ -48,12 +77,17 @@ export class ListProjectsHandler implements IQueryHandler<
       counts.map((row) => [row.projectId, Number(row.count)]),
     );
 
-    return memberships.map((membership) =>
-      toProjectSummary(
-        membership.project,
-        membership.role,
-        countByProject.get(membership.projectId) ?? 1,
+    return {
+      items: memberships.map((membership) =>
+        toProjectSummary(
+          membership.project,
+          membership.role,
+          countByProject.get(membership.projectId) ?? 1,
+        ),
       ),
-    );
+      total,
+      limit: filter.limit,
+      offset: filter.offset,
+    };
   }
 }

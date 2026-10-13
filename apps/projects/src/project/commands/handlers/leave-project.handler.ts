@@ -39,7 +39,10 @@ export class LeaveProjectHandler implements ICommandHandler<
       // Last member out: the project and its open invites are soft-deleted with them
       if (remaining.length === 0) {
         const invites = manager.getRepository(ProjectInvite);
-        await invites.softRemove(await invites.find({ where: { projectId } }));
+        // One at a time, so their audit records are appended in turn
+        for (const invite of await invites.find({ where: { projectId } })) {
+          await invites.softRemove(invite);
+        }
 
         const projects = manager.getRepository(Project);
         await projects.softRemove(

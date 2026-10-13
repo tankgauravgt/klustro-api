@@ -9,4 +9,5 @@ export interface ProjectSummary {
   createdAt: Date;
   memberCount: number;
   role: ProjectRole;
+  archivedAt: Date | null;
 }

@@ -9,6 +9,7 @@ import { GovernanceModule } from '@libs/governance';
 import { AuditModule } from './audit/audit.module.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { InviteModule } from './invite/invite.module.js';
+import { MemberModule } from './member/member.module.js';
 import { ProjectModule } from './project/project.module.js';
 
 @Module({
@@ -19,6 +20,7 @@ import { ProjectModule } from './project/project.module.js';
     IdentityModule,
     ProjectModule,
     InviteModule,
+    MemberModule,
     AuditModule,
   ],
 })

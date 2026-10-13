@@ -21,4 +21,8 @@ export class Project extends GovernedEntity {
   // Chosen once at creation; `update: false` makes TypeORM skip it on every save
   @Column({ type: 'varchar', update: false })
   meshProvider!: MeshProvider;
+
+  // Set while the project is archived: kept and readable, but closed to changes
+  @Column({ type: 'datetime', nullable: true })
+  archivedAt!: Date | null;
 }

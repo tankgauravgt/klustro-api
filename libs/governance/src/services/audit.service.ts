@@ -145,6 +145,8 @@ export class AuditService {
       metadata: JSON.stringify({
         requestId: context?.requestId ?? null,
         ip: context?.ip ?? null,
+        peerIp: context?.peerIp ?? null,
+        forwardedFor: context?.forwardedFor ?? null,
         userAgent: context?.userAgent ?? null,
         operation: context?.operation ?? null,
         ...event.metadata,
